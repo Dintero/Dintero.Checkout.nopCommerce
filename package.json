@@ -14,7 +14,7 @@
     "babel-preset-env": "^1.7.0",
     "browser-sync": "^2.27.12",
     "browser-sync-webpack-plugin": "^2.3.0",
-    "webpack": "^5.75.0",
+    "webpack": "^5.94.0",
     "webpack-cli": "^5.0.1",
     "webpack-notifier": "^1.15.0"
   },
