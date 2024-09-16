@@ -1,0 +1,11 @@
+﻿{
+  "Group": "Digitroll",
+  "FriendlyName": "Dintero Checkout",
+  "SystemName": "Payments.Dintero",
+  "Version": "1.00",
+  "SupportedVersions": [ "4.70" ],
+  "Author": "Digitroll AS",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Payments.Dintero.dll",
+  "Description": "This plugin allows paying with Dintero"
+}

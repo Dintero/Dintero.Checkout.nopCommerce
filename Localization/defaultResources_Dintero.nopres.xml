@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Language Name="Norwegian">
+  <LocaleResource Name="Plugins.Payments.Dintero.Notes">
+    <Value>If you're using this gateway, ensure that your primary store currency is supported by Dintero.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.SandboxURL">
+    <Value>Sandbox Url</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.SandboxURL.Hint">
+    <Value>Where to send sandbox transactions. Please enter the URL without 'https://' for example 'checkout.dintero.com'.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.ProductionURL">
+    <Value>Production Url</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.ProductionURL.Hint">
+    <Value>Where to send real transactions. Please enter the URL without 'https://' for example 'checkout.dintero.com'.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.UseSandbox">
+    <Value>Use Sandbox</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.UseSandbox.Hint">
+    <Value>Check to enable Sandbox (testing environment).</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.UseShippingAddressAsBilling">
+    <Value>Use shipping address.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.UseShippingAddressAsBilling.Hint">
+    <Value>Check if you want to use the shipping address as a billing address.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.TransactModeValues">
+    <Value>Transaction mode</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.TransactModeValues.Hint">
+    <Value>Choose transaction mode.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.SecretKey">
+    <Value>Secret key</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.SecretKey.Hint">
+    <Value>Specify Secret key.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.ClientId">
+    <Value>Client Id</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.ClientId.Hint">
+    <Value>Specify client identifier.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.AccountId">
+    <Value>Account Id</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.AccountId.Hint">
+    <Value>Specify Account identifier.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.AdditionalFee">
+    <Value>Additional fee</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.AdditionalFee.Hint">
+    <Value>Enter additional fee to charge your customers.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.AdditionalFeePercentage">
+    <Value>Additional fee. Use percentage</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.AdditionalFeePercentage.Hint">
+    <Value>Determines whether to apply a percentage additional fee to the order total. If not enabled, a fixed value is used.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.PaymentMethodDescription">
+    <Value>Pay by credit / debit card</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.PaymentMethodDescription">
+    <Value>Pay by credit / debit card</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.AccessToken">
+    <Value>Access token</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.AccessToken.Hint">
+    <Value>Access token</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.TokenExpiresIn">
+    <Value>Token expires in</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.TokenExpiresIn.Hint">
+    <Value>Token expires in (total second).</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.TokenExpiresInDatetimeUTC">
+    <Value>Token expire time</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.TokenExpiresInDatetimeUTC.Hint">
+    <Value>Token expire time</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.LogEnabled">
+    <Value>Log enabled</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.LogEnabled.Hint">
+    <Value>Log enabled/disabled.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Redirect.Payment.Link.Message">
+    <Value>For payment you will be redirected to Dintero.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Redirect.Payment.Button">
+    <Value>Proceed to payment</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.ProfileId">
+    <Value>Profile Id</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugins.Payments.Dintero.Fields.ProfileId.Hint">
+    <Value>Specify profile identifier</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugin.Payments.Dintero.IPNHandler.Error.Message">
+    <Value>Something went wrong, Please try again your payment process.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugin.Payments.Dintero.Token.Generated.Successfully">
+    <Value>Dintero token generated successfully.</Value>
+  </LocaleResource>
+  <LocaleResource Name="Plugin.Payments.Dintero.Token.Generated.failed">
+    <Value>Dintero token generated Failed.</Value>
+  </LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.DefaultAddressId">
+		<Value>Default address id</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.DefaultAddressId.Hint">
+		<Value>If cutomer not have shipping address and address then this address id will be use for address.</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.FallbackPhoneNo">
+		<Value>Fallback phone no</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.FallbackPhoneNo.Hint">
+		<Value>If cutomer not have phone number in shipping address then this phone number will be use for shipping address object.</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugin.Payments.Dintero.Token.Generate.Button">
+		<Value>Generate token</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.SandboxDinteroCheckoutWebSDKEndpoint">
+		<Value>Sandbox dintero checkout web SDK endpoint</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.SandboxDinteroCheckoutWebSDKEndpoint.Hint">
+		<Value>Where to send sandbox transactions. for example 'https://checkout.test.dintero.com'.</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.SandboxAuthEndpoint">
+		<Value>Sandbox auth endpoint</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.SandboxAuthEndpoint.Hint">
+		<Value>Where to send sandbox transactions. Please enter the URL without 'https://' for example 'checkout.dintero.com'.</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.ProductionDinteroCheckoutWebSDKEndpoint">
+		<Value>Production dintero checkout web SDK endpoint</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.ProductionDinteroCheckoutWebSDKEndpoint.Hint">
+		<Value>Where to send sandbox transactions. for example 'https://checkout.test.dintero.com'</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.ProductionAuthEndpoint">
+		<Value>Production auth endpoint</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.ProductionAuthEndpoint.Hint">
+		<Value>Where to send real transactions. Please enter the URL without 'https://' for example 'checkout.dintero.com'.</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.SandboxAuthAudience">
+		<Value>Sandbox auth audience</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.SandboxAuthAudience.Hint">
+		<Value>Where to send sandbox transactions. Please enter the URL without 'https://' for example 'checkout.dintero.com'.</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.ProductionAuthAudience">
+		<Value>Production auth audience</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.Fields.ProductionAuthAudience.Hint">
+		<Value>Where to send real transactions. Please enter the URL without 'https://' for example 'checkout.dintero.com'.</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugins.Payments.Dintero.ClickAndCollect.EstimatedShipment">
+		<Value>Estimated delivery 08.03</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugin.Payments.Dintero.PaymentAdditionalFee">
+		<Value>Payment method additional fee</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugin.Payments.Dintero.YourOrder">
+		<Value>Your Order</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugin.Payments.Dintero.EditCart">
+		<Value>Edit Cart</Value>
+	</LocaleResource>
+	<LocaleResource Name="Plugin.Payments.Dintero.See.Order.Summary">
+		<Value>Bag</Value>
+	</LocaleResource>
+</Language>

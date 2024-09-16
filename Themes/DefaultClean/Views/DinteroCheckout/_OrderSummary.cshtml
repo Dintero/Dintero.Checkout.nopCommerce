@@ -1,0 +1,124 @@
+﻿@model ShoppingCartModel
+
+<div class="your-order">
+    <div class="title-cart">
+        <h2 class="m-0">@T("Plugin.Payments.Dintero.YourOrder")</h2>
+        <a href="@Url.RouteUrl("ShoppingCart")"><p class="m-0">@T("Plugin.Payments.Dintero.EditCart")</p></a>
+    </div>
+    <div class="order-summary">
+        @if (Model.Items.Count > 0)
+        {
+            if (Model.Warnings.Count > 0)
+            {
+                <div class="message-error">
+                    <ul>
+                        @foreach (var warning in Model.Warnings)
+                        {
+                            <li>@warning</li>
+                        }
+                    </ul>
+                </div>
+            }
+            <div class="accordion accordion-flush" id="accordionOrderSummaryExample">
+                <div class="accordion-item">
+                    <div class="collapsed ordersummery" data-bs-toggle="collapse" data-bs-target="#ordersummary-collapseOne" aria-expanded="false" aria-controls="ordersummary-collapseOne">
+                        <h2 class="accordion-header">@T("Plugin.Payments.Dintero.See.Order.Summary") (@Model.Items.Count)</h2>
+                    </div>
+                    <div id="ordersummary-collapseOne" class="" aria-labelledby="flush-headingOne" data-bs-parent="#accordionOrderSummaryExample">
+                        <div class="product-order">
+                            @foreach (var item in Model.Items)
+                            {
+                                <div class="product-item d-flex">
+                                    @if (Model.ShowProductImages)
+                                    {
+                                        <div class="flex-shrink-0 product_img">
+                                            <a href="@Url.RouteUrl("Product", new {SeName = item.ProductSeName})"><img alt="@item.Picture.AlternateText" src="@item.Picture.ImageUrl" title="@item.Picture.Title" /></a>
+                                        </div>
+
+                                    }
+                                    <div class="product-info flex-grow-1">
+                                        <div class="info-grid flex-grow-1">
+                                            <h5>
+                                                <a href="@Url.RouteUrl("Product", new {SeName = item.ProductSeName})" class="product-name">@item.ProductName</a>
+                                            </h5>
+                                            @if (Model.ShowSku)
+                                            {
+                                                <p>@T("ShoppingCart.SKU") : @item.Sku</p>
+                                            }
+                                            @if (!string.IsNullOrEmpty(item.AttributeInfo))
+                                            {
+                                                <p>
+                                                    @Html.Raw(item.AttributeInfo)
+                                                </p>
+                                            }
+                                            @if (!string.IsNullOrEmpty(item.RecurringInfo))
+                                            {
+                                                <p class="recurring-info">
+                                                    @Html.Raw(item.RecurringInfo)
+                                                </p>
+                                            }
+                                            @if (!string.IsNullOrEmpty(item.RentalInfo))
+                                            {
+                                                <p class="rental-info">
+                                                    @Html.Raw(item.RentalInfo)
+                                                </p>
+                                            }
+                                            @if (Model.ShowVendorName)
+                                            {
+                                                <p>@T("ShoppingCart.VendorName"): @item.VendorName</p>
+
+                                            }
+                                            <p>@T("ShoppingCart.Quantity"): @item.Quantity</p>
+                                        </div>
+                                        <div class="info-grid">
+                                            @if (item.Warnings.Count > 0)
+                                            {
+                                                <div class="message-error">
+                                                    <ul>
+                                                        @foreach (var warning in item.Warnings)
+                                                        {
+                                                            <li>@Html.Raw(warning)</li>
+                                                        }
+                                                    </ul>
+                                                </div>
+                                            }
+                                            @{
+                                                string addColorClass = string.Empty;
+                                            }
+                                            <p class="new-price @addColorClass">@item.UnitPrice</p>
+
+                                        </div>
+
+                                    </div>
+
+
+                                </div>
+                            }
+                        </div>
+                        @*-----cart-options start-------*@
+
+                        @await Component.InvokeAsync("SelectedCheckoutAttributes")
+                        @*-----cart-options end-------*@
+                        <div id="checkout-order-totals">
+                            @await Component.InvokeAsync("OrderTotals", new { isEditable = false })
+                        </div>
+                    </div>
+                </div>
+                @*<h6 class="promo-code">@T("OrderSummary.AddPromoCode")</h6>*@
+            </div>
+        }
+        else
+        {
+            <div class="no-data">
+                @T("ShoppingCart.CartIsEmpty")
+            </div>
+        }
+    </div>
+</div>
+<script>
+    $(document).ready(function () {
+        $(".ordersummery").click(function () {
+            $('.down-arrow').toggleClass('rotate');
+        });
+    })
+</script>
