@@ -109,4 +109,8 @@ public record ConfigurationModel : BaseNopModel
     [NopResourceDisplayName("Plugins.Payments.Dintero.Fields.ProductionAuthAudience")]
     public string ProductionAuthAudience { get; set; }
     public bool ProductionAuthAudience_OverrideForStore { get; set; }
+
+    [NopResourceDisplayName("Plugins.Payments.Dintero.Fields.DefaultPaymentType")]
+    public string DefaultPaymentType { get; set; }
+    public bool DefaultPaymentType_OverrideForStore { get; set; }
 }

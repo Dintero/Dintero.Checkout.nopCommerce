@@ -22,11 +22,10 @@ public class NopStartup : INopStartup
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         //override services
-        services.AddSingleton(typeof(IDinteroHttpClient), typeof(DinteroHttpClient));
-        services.AddSingleton(typeof(IOverrideOrderProcessingService), typeof(OverrideOrderProcessingService));
-        services.AddSingleton(typeof(CheckoutController), typeof(OverrideCheckoutController));
-        services.AddSingleton(typeof(OrderProcessingService), typeof(OverrideOrderProcessingService));
-        services.AddSingleton(typeof(IOrderProcessingService), typeof(OverrideOrderProcessingService));
+        services.AddScoped<IDinteroHttpClient, DinteroHttpClient>();
+        services.AddScoped<IOverrideOrderProcessingService, OverrideOrderProcessingService>();
+        services.AddScoped<OrderProcessingService, OverrideOrderProcessingService>();
+        services.AddScoped<IOrderProcessingService, OverrideOrderProcessingService>();
     }
 
     /// <summary>

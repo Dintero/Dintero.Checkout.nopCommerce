@@ -27,9 +27,39 @@ using System.Threading.Tasks;
 namespace Nop.Plugin.Payments.Dintero.Controllers;
 
 [AutoValidateAntiforgeryToken]
-public partial class OverrideCheckoutController : CheckoutController
+public class OverrideCheckoutController: BasePublicController
 {
+    protected readonly AddressSettings _addressSettings;
+    protected readonly CaptchaSettings _captchaSettings;
+    protected readonly CustomerSettings _customerSettings;
+    protected readonly IAddressModelFactory _addressModelFactory;
+    protected readonly IAddressService _addressService;
+    protected readonly IAttributeParser<AddressAttribute, AddressAttributeValue> _addressAttributeParser;
+    protected readonly ICheckoutModelFactory _checkoutModelFactory;
+    protected readonly ICountryService _countryService;
+    protected readonly ICustomerService _customerService;
+    protected readonly IGenericAttributeService _genericAttributeService;
+    protected readonly ILocalizationService _localizationService;
+    protected readonly ILogger _logger;
+    protected readonly IOrderProcessingService _orderProcessingService;
+    protected readonly IOrderService _orderService;
+    protected readonly IPaymentPluginManager _paymentPluginManager;
+    protected readonly IPaymentService _paymentService;
+    protected readonly IProductService _productService;
+    protected readonly IShippingService _shippingService;
+    protected readonly IShoppingCartService _shoppingCartService;
+    protected readonly IStoreContext _storeContext;
+    protected readonly ITaxService _taxService;
+    protected readonly IWebHelper _webHelper;
+    protected readonly IWorkContext _workContext;
+    protected readonly OrderSettings _orderSettings;
+    protected readonly PaymentSettings _paymentSettings;
+    protected readonly RewardPointsSettings _rewardPointsSettings;
+    protected readonly ShippingSettings _shippingSettings;
+    protected readonly TaxSettings _taxSettings;
+
     #region Ctor
+
     public OverrideCheckoutController(AddressSettings addressSettings,
         CaptchaSettings captchaSettings,
         CustomerSettings customerSettings,
@@ -57,36 +87,36 @@ public partial class OverrideCheckoutController : CheckoutController
         PaymentSettings paymentSettings,
         RewardPointsSettings rewardPointsSettings,
         ShippingSettings shippingSettings,
-        TaxSettings taxSettings) : base(
-            addressSettings, 
-            captchaSettings, 
-            customerSettings, 
-            addressModelFactory, 
-            addressService, 
-            addressAttributeParser, 
-            checkoutModelFactory, 
-            countryService, 
-            customerService, 
-            genericAttributeService, 
-            localizationService, 
-            logger, 
-            orderProcessingService, 
-            orderService, 
-            paymentPluginManager, 
-            paymentService, 
-            productService, 
-            shippingService, 
-            shoppingCartService, 
-            storeContext, 
-            taxService, 
-            webHelper, 
-            workContext, 
-            orderSettings, 
-            paymentSettings, 
-            rewardPointsSettings, 
-            shippingSettings, 
-            taxSettings)
+        TaxSettings taxSettings)
     {
+        _addressSettings = addressSettings;
+        _captchaSettings = captchaSettings;
+        _customerSettings = customerSettings;
+        _addressModelFactory = addressModelFactory;
+        _addressService = addressService;
+        _addressAttributeParser = addressAttributeParser;
+        _checkoutModelFactory = checkoutModelFactory;
+        _countryService = countryService;
+        _customerService = customerService;
+        _genericAttributeService = genericAttributeService;
+        _localizationService = localizationService;
+        _logger = logger;
+        _orderProcessingService = orderProcessingService;
+        _orderService = orderService;
+        _paymentPluginManager = paymentPluginManager;
+        _paymentService = paymentService;
+        _productService = productService;
+        _shippingService = shippingService;
+        _shoppingCartService = shoppingCartService;
+        _storeContext = storeContext;
+        _taxService = taxService;
+        _webHelper = webHelper;
+        _workContext = workContext;
+        _orderSettings = orderSettings;
+        _paymentSettings = paymentSettings;
+        _rewardPointsSettings = rewardPointsSettings;
+        _shippingSettings = shippingSettings;
+        _taxSettings = taxSettings;
     }
     #endregion
 

@@ -180,4 +180,10 @@
 	<LocaleResource Name="Plugin.Payments.Dintero.See.Order.Summary">
 		<Value>Bag</Value>
 	</LocaleResource>
+    <LocaleResource Name="Plugins.Payments.Dintero.Fields.DefaultPaymentType">
+        <Value>Default payment type</Value>
+    </LocaleResource>
+    <LocaleResource Name="Plugins.Payments.Dintero.Fields.DefaultPaymentType.Hint">
+        <Value>Set default payment type for dintero like 'payex.creditcard' , 'bambora.creditcard'</Value>
+    </LocaleResource>
 </Language>

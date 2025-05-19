@@ -2,6 +2,7 @@
 
 using DocumentFormat.OpenXml.EMMA;
 using DocumentFormat.OpenXml.Wordprocessing;
+using LinqToDB.Common;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -49,7 +50,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static Nop.Plugin.Payments.Dintero.Domain.DinteroOrderSessionRequest;
 using static Nop.Plugin.Payments.Dintero.Domain.DinteroPreOrderSessionRequest;
 
 namespace Nop.Plugin.Payments.Dintero.Controllers;
@@ -285,13 +285,13 @@ public class DinteroCheckoutController : BasePluginController
             delivery_method = dinteroOrderSessionRequest.order.shipping_option.delivery_method,
             pick_up_address = new ShippingOptionPickupAddress
             {
-                first_name = dinteroOrderSessionRequest.order.shipping_option.pick_up_address.first_name,
+                first_name = !string.IsNullOrWhiteSpace(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.first_name) ? dinteroOrderSessionRequest.order.shipping_option.pick_up_address.first_name : "",
                 last_name = "",
                 distance = Convert.ToDecimal(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.distance),
                 postal_code = !string.IsNullOrWhiteSpace(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.postal_code) ? dinteroOrderSessionRequest.order.shipping_option.pick_up_address.postal_code : "",
                 postal_place = !string.IsNullOrWhiteSpace(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.postal_place) ? dinteroOrderSessionRequest.order.shipping_option.pick_up_address.postal_place : "",
                 country = !string.IsNullOrWhiteSpace(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.country) ? dinteroOrderSessionRequest.order.shipping_option.pick_up_address.country : "",
-                address_line = dinteroOrderSessionRequest.order.shipping_option.pick_up_address.address_line,
+                address_line = !string.IsNullOrWhiteSpace(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.address_line) ? dinteroOrderSessionRequest.order.shipping_option.pick_up_address.address_line : "",
                 business_name = ""
             }
         };
@@ -304,17 +304,6 @@ public class DinteroCheckoutController : BasePluginController
             vat_amount = order.OrderTax * 100,
         };
 
-        var payexCreditcard = new DinteroPreOrderSessionRequest.PayexCreditcard
-        {
-            payment_token = "",
-            recurrence_token = ""
-        };
-
-        var tokens = new DinteroPreOrderSessionRequest.Tokens
-        {
-            PayexCreditcard = payexCreditcard
-        };
-
         var discountLineCount = 1;
 
         //order total (and applied discounts, gift cards, reward points)
@@ -322,7 +311,7 @@ public class DinteroCheckoutController : BasePluginController
         dinteroOrderSessionRequest.order.amount = orderTotal * 100;
 
         var lineCount = 1;
-        var isIncludingTax = await _workContext.GetTaxDisplayTypeAsync() == TaxDisplayType.IncludingTax && !_taxSettings.ForceTaxExclusionFromOrderSubtotal;
+        
         foreach (var item in orderItems)
         {
             var discountLineForProduct = new List<DinteroPreOrderSessionRequest.Discountlines>();
@@ -357,7 +346,7 @@ public class DinteroCheckoutController : BasePluginController
                 line_id = lineCount.ToString(),
                 description = !string.IsNullOrWhiteSpace(discountOrderItem.description) ? discountOrderItem.description : "",
                 quantity = discountOrderItem.quantity,
-                amount = isIncludingTax ? Math.Round(discountOrderItem.amount) : Math.Round(discountOrderItem.amount + discountOrderItem.vat_amount),
+                amount = _taxSettings.PricesIncludeTax ? Math.Round(discountOrderItem.amount) : Math.Round(discountOrderItem.amount + discountOrderItem.vat_amount),
                 vat = Math.Round(discountOrderItem.vat),
                 vat_amount = Math.Round(discountOrderItem.vat_amount),
 					thumbnail_url = productPicture != null ? await _pictureService.GetPictureUrlAsync(productPicture.Id, _mediaSettings.CartThumbPictureSize, true) : string.Empty,
@@ -461,7 +450,6 @@ public class DinteroCheckoutController : BasePluginController
             customer_id = customer.Id.ToString(),
             email = !string.IsNullOrEmpty(customer.Email) ? customer.Email.ToString() : currentCustomerEmailAddress,
             phone_number = customer.Phone ?? "",
-            tokens = tokens
         };
         dinteroOrderSessionRequest.customer = customerRequest;
 
@@ -515,13 +503,13 @@ public class DinteroCheckoutController : BasePluginController
                 option.delivery_method = dinteroOrderSessionRequest.order.shipping_option.delivery_method;
                 option.pick_up_address = new ShippingOptionPickupAddress
                 {
-                    first_name = dinteroOrderSessionRequest.order.shipping_option.pick_up_address.first_name,
+                    first_name = !string.IsNullOrWhiteSpace(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.first_name) ? dinteroOrderSessionRequest.order.shipping_option.pick_up_address.first_name : "",
                     last_name = "",
                     distance = Convert.ToDecimal(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.distance),
                     postal_code = dinteroOrderSessionRequest.order.shipping_option.pick_up_address.postal_code,
                     postal_place = !string.IsNullOrWhiteSpace(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.postal_place) ? dinteroOrderSessionRequest.order.shipping_option.pick_up_address.postal_place : "",
                     country = !string.IsNullOrWhiteSpace(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.country) ? dinteroOrderSessionRequest.order.shipping_option.pick_up_address.country : "",
-                    address_line = dinteroOrderSessionRequest.order.shipping_option.pick_up_address.address_line,
+                    address_line = !string.IsNullOrWhiteSpace(dinteroOrderSessionRequest.order.shipping_option.pick_up_address.address_line) ? dinteroOrderSessionRequest.order.shipping_option.pick_up_address.address_line : "",
                     business_name = ""
                 };
             }
@@ -541,7 +529,7 @@ public class DinteroCheckoutController : BasePluginController
                     postal_code = option.pick_up_address.postal_code,
                     postal_place = !string.IsNullOrWhiteSpace(option.pick_up_address.postal_place) ? option.pick_up_address.postal_place : "",
                     country = !string.IsNullOrWhiteSpace(option.pick_up_address.country) ? option.pick_up_address.country : "",
-                    address_line = option.pick_up_address.address_line,
+                    address_line = !string.IsNullOrWhiteSpace(option.pick_up_address.address_line) ? option.pick_up_address.address_line : "",
                     business_name = ""
                 };
             }
@@ -550,6 +538,7 @@ public class DinteroCheckoutController : BasePluginController
         dinteroOrderSessionRequest.url.return_url = string.Format(PluginDefaults.DINTERO_RETURN_URL, storeLocation, customer.CustomerGuid, dinteroOrderSessionRequest.order.merchant_reference);
         dinteroOrderSessionRequest.url.callback_url = string.Format(PluginDefaults.DINTERO_CALLBACK_URL, storeLocation, customer.CustomerGuid, dinteroOrderSessionRequest.order.merchant_reference);
         dinteroOrderSessionRequest.express.shipping_mode = "shipping_required";
+        dinteroOrderSessionRequest.profile_id = !string.IsNullOrWhiteSpace(_dinteroPaymentSettings.ProfileId) ? _dinteroPaymentSettings.ProfileId : "";
 
         var orderSessionContent = JsonConvert.SerializeObject(dinteroOrderSessionRequest);
         if (_dinteroPaymentSettings.LogEnabled)
@@ -618,35 +607,33 @@ public class DinteroCheckoutController : BasePluginController
             callback_url = string.Format(PluginDefaults.DINTERO_CALLBACK_URL, storeLocation, customer.CustomerGuid, orderRequest.merchant_reference)
         };
 
-        var creditcard = new DinteroPreOrderSessionRequest.Creditcard
-        {
-            enabled = true
-        };
-        var payex = new DinteroPreOrderSessionRequest.Payex
-        {
-            creditcard = creditcard,
-        };
-        var vipps = new DinteroPreOrderSessionRequest.Vipps
-        {
-            enabled = true,
-        };
         var invoice = new DinteroPreOrderSessionRequest.Invoice
         {
             enabled = true,
             type = "payment_product_type"
         };
-        var collector = new DinteroPreOrderSessionRequest.Collector
+
+        var wallet = new DinteroPreOrderSessionRequest.Wallets
+        {
+            type = "payment_product_type",
+            enabled = false,
+        };
+        var zero = new DinteroPreOrderSessionRequest.Zero
+        {
+            type = "payment_product_type",
+            enabled = false,
+        };
+
+        var dintero = new DinteroPreOrderSessionRequest.Dintero
         {
             type = "payment_type",
-            invoice = invoice,
+            wallets = wallet,
+            zero = zero
         };
         var configuration = new DinteroPreOrderSessionRequest.Configuration
         {
             auto_capture = Convert.ToInt32(_dinteroPaymentSettings.TransactMode) == (int)TransactMode.AuthorizeAndCapture,
-            default_payment_type = "payex.creditcard",
-            payex = payex,
-            vipps = vipps,
-            collector = collector,
+            dintero = dintero,
         };
 
         var dinteroOrderSessionRequest = new DinteroPreOrderSessionRequest
@@ -654,18 +641,7 @@ public class DinteroCheckoutController : BasePluginController
             configuration = configuration,
             order = dinteroPreOrderSessionRequest == null ? orderRequest : dinteroPreOrderSessionRequest.order,
             url = dinteroPreOrderSessionRequest == null ? url : dinteroPreOrderSessionRequest.url,
-            profile_id = _dinteroPaymentSettings.ProfileId,
-        };
-
-        var payexCreditcard = new DinteroPreOrderSessionRequest.PayexCreditcard
-        {
-            payment_token = "",
-            recurrence_token = ""
-        };
-
-        var tokens = new DinteroPreOrderSessionRequest.Tokens
-        {
-            PayexCreditcard = payexCreditcard
+            profile_id = !string.IsNullOrWhiteSpace(_dinteroPaymentSettings.ProfileId) ? _dinteroPaymentSettings.ProfileId : "",
         };
 
         // customer
@@ -674,8 +650,8 @@ public class DinteroCheckoutController : BasePluginController
             customer_id = customer.Id.ToString(),
             email = !string.IsNullOrEmpty(customer.Email) ? customer.Email.ToString() : "",
             phone_number = customer.Phone ?? "",
-            tokens = tokens
         };
+
         dinteroOrderSessionRequest.customer = customerRequest;
 
         var shippingAddress = await _customerService.GetCustomerShippingAddressAsync(customer);
@@ -744,7 +720,7 @@ public class DinteroCheckoutController : BasePluginController
                             delivery_method = "pick_up",
                             pick_up_address = new ShippingOptionPickupAddress
                             {
-                                first_name = picupPoint.name,
+                                first_name = !string.IsNullOrWhiteSpace(picupPoint.name) ? picupPoint.name : "",
                                 last_name = "",
                                 distance = Convert.ToDecimal(picupPoint.distanceInKm.Replace('.', ',')),
                                 postal_code = picupPoint.postalCode,
@@ -784,13 +760,13 @@ public class DinteroCheckoutController : BasePluginController
                             delivery_method = "pick_up",
                             pick_up_address = new ShippingOptionPickupAddress
                             {
-                                first_name = warehouse.Name,
+                                first_name = !string.IsNullOrWhiteSpace(warehouse.Name) ? warehouse.Name : "",
                                 last_name = "",
                                 distance = decimal.Zero,
                                 postal_code = warehouseAddress.ZipPostalCode,
                                 postal_place = !string.IsNullOrWhiteSpace(warehouseAddress.City) ? warehouseAddress.City : "",
                                 country = "",
-                                address_line = addressLine,
+                                address_line = !string.IsNullOrWhiteSpace(addressLine) ? addressLine : "",
                                 business_name = ""
                             }
                         };
@@ -837,7 +813,7 @@ public class DinteroCheckoutController : BasePluginController
                             delivery_method = "pick_up",
                             pick_up_address = new ShippingOptionPickupAddress
                             {
-                                first_name = picupPoint.Name1,
+                                first_name = !string.IsNullOrWhiteSpace(picupPoint.Name1) ? picupPoint.Name1 : "",
                                 last_name = "",
                                 distance = Convert.ToDecimal(picupPoint.Distance.ToString().Replace('.', ',')),
                                 postal_code = picupPoint.PostCode,
@@ -912,7 +888,7 @@ public class DinteroCheckoutController : BasePluginController
             var cartTotal = await _shoppingCartModelFactory.PrepareOrderTotalsModelAsync(cart, false);
 
             var lineCount = 1;
-            var isIncludingTax = await _workContext.GetTaxDisplayTypeAsync() == TaxDisplayType.IncludingTax && !_taxSettings.ForceTaxExclusionFromOrderSubtotal;
+            
             foreach (var discountOrderItem in model.Items)
             {
                 //Add club discount in shopping cart itme
@@ -965,7 +941,7 @@ public class DinteroCheckoutController : BasePluginController
                         line_id = lineCount.ToString(),
                         description = !string.IsNullOrWhiteSpace(product.Name) ? product.Name : "",
                         quantity = discountOrderItem.Quantity,
-                        amount = isIncludingTax ? Math.Round(scSubTotal * 100) : Math.Round(scSubTotal * 100) + vatAmount,
+                        amount = _taxSettings.PricesIncludeTax ? Math.Round(scSubTotalInclTax * 100) : Math.Round(scSubTotalExclTax * 100) + vatAmount,
                         vat = vat,
                         vat_amount = vatAmount,
 							thumbnail_url = productPicture != null && !string.IsNullOrWhiteSpace(productPicture.ImageUrl) ? productPicture.ImageUrl : string.Empty,
@@ -1220,7 +1196,7 @@ public class DinteroCheckoutController : BasePluginController
                                 delivery_method = "pick_up",
                                 pick_up_address = new ShippingOptionPickupAddress
                                 {
-                                    first_name = picupPoint.name,
+                                    first_name = !string.IsNullOrWhiteSpace(picupPoint.name) ? picupPoint.name : "",
                                     last_name = "",
                                     distance = Convert.ToDecimal(picupPoint.distanceInKm.Replace('.', ',')),
                                     postal_code = picupPoint.postalCode,
@@ -1260,13 +1236,13 @@ public class DinteroCheckoutController : BasePluginController
                                 delivery_method = "pick_up",
                                 pick_up_address = new ShippingOptionPickupAddress
                                 {
-                                    first_name = warehouse.Name,
+                                    first_name = !string.IsNullOrWhiteSpace(warehouse.Name) ? warehouse.Name : "",
                                     last_name = "",
                                     distance = decimal.Zero,
                                     postal_code = warehouseAddress.ZipPostalCode,
                                     postal_place = !string.IsNullOrWhiteSpace(warehouseAddress.City) ? warehouseAddress.City : "",
                                     country = "",
-                                    address_line = addressLine,
+                                    address_line = !string.IsNullOrWhiteSpace(addressLine) ? addressLine : "",
                                     business_name = ""
                                 }
                             };
@@ -1313,7 +1289,7 @@ public class DinteroCheckoutController : BasePluginController
                                 delivery_method = "pick_up",
                                 pick_up_address = new ShippingOptionPickupAddress
                                 {
-                                    first_name = picupPoint.Name1,
+                                    first_name = !string.IsNullOrWhiteSpace(picupPoint.Name1) ? picupPoint.Name1 : "",
                                     last_name = "",
                                     distance = Convert.ToDecimal(picupPoint.Distance.ToString().Replace('.', ',')),
                                     postal_code = picupPoint.PostCode,
@@ -1465,7 +1441,8 @@ public class DinteroCheckoutController : BasePluginController
                 var subtotal = await _currencyService.ConvertFromPrimaryStoreCurrencyAsync(subtotalBase, currentCurrency);
 
                 dinteroSessionRequest.order.amount = (subtotal * 100) + Math.Round(paymentAdditionalFee * 100) + dinteroSessionRequest.order.shipping_option.amount;
-                
+                dinteroSessionRequest.profile_id = !string.IsNullOrWhiteSpace(_dinteroPaymentSettings.ProfileId) ? _dinteroPaymentSettings.ProfileId : "";
+
                 var orderSessionContent = JsonConvert.SerializeObject(dinteroSessionRequest);
 
                 if (_dinteroPaymentSettings.LogEnabled)
@@ -1552,6 +1529,12 @@ public class DinteroCheckoutController : BasePluginController
                 processPaymentRequest.InitialOrder = new Core.Domain.Orders.Order();
                 processPaymentRequest.InitialOrder.PaymentMethodAdditionalFeeInclTax = paymentMethodAdditionalFeeInclTax;
                 await HttpContext.Session.SetAsync<ProcessPaymentRequest>("OrderPaymentInfo", processPaymentRequest);
+
+                if ((await _workContext.GetCurrentCustomerAsync()).BillingAddressId == null)
+                    return Json(new
+                    {
+                        Success = true,
+                    });
 
                 if (dinteroPreOrderSessionRequest.order.shipping_option.title.ToLower().Contains("click"))
                 {

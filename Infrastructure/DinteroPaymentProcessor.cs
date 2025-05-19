@@ -1,19 +1,16 @@
 ﻿// Note: Dintero couldn't be supported order subtotal and total discount.
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Newtonsoft.Json;
 using Nop.Core;
 using Nop.Core.Domain.Logging;
 using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Payments;
-using Nop.Core.Domain.Security;
 using Nop.Core.Domain.Tax;
-using Nop.Core.Infrastructure;
-using Nop.Data;
 using Nop.Plugin.Payments.Dintero.Components;
 using Nop.Plugin.Payments.Dintero.Domain;
 using Nop.Plugin.Payments.Dintero.Models;
 using Nop.Plugin.Payments.Dintero.Services;
+using Nop.Services.Cms;
 using Nop.Services.Common;
 using Nop.Services.Configuration;
 using Nop.Services.Customers;
@@ -23,20 +20,15 @@ using Nop.Services.Logging;
 using Nop.Services.Orders;
 using Nop.Services.Payments;
 using Nop.Services.Plugins;
-using Nop.Services.Security;
-using Nop.Web.Framework.Menu;
+using Nop.Web.Framework.Infrastructure;
 using PTX.Plugin.Payments.Dintero.Domain;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Nop.Plugin.Payments.Dintero.Infrastructure;
 
 /// <summary>
 /// Dintero payment processor
 /// </summary>
-public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlugin
+public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IWidgetPlugin
 {
     #region Fields
 
@@ -163,42 +155,38 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
         var orderItems = await _orderService.GetOrderItemsAsync(order.Id);
         var customer = await _customerService.GetCustomerByIdAsync(order.CustomerId);
 
-        var creditcard = new DinteroOrderSessionRequest.Creditcard
+        var creditcard = new DinteroPreOrderSessionRequest.Creditcard
         {
             enabled = true
         };
-        var payex = new DinteroOrderSessionRequest.Payex
+        var payex = new DinteroPreOrderSessionRequest.Payex
         {
             creditcard = creditcard,
         };
-        var vipps = new DinteroOrderSessionRequest.Vipps
+        var vipps = new DinteroPreOrderSessionRequest.Vipps
         {
             enabled = true,
         };
-        var invoice = new DinteroOrderSessionRequest.Invoice
+        var invoice = new DinteroPreOrderSessionRequest.Invoice
         {
             enabled = true,
             type = "payment_product_type"
         };
-        var collector = new DinteroOrderSessionRequest.Collector
+        var collector = new DinteroPreOrderSessionRequest.Collector
         {
             type = "payment_type",
             invoice = invoice,
         };
-        var configuration = new DinteroOrderSessionRequest.Configuration
+        var configuration = new DinteroPreOrderSessionRequest.Configuration
         {
             auto_capture = Convert.ToInt32(_dinteroPaymentSettings.TransactMode) == (int)TransactMode.AuthorizeAndCapture,
-            default_payment_type = "payex.creditcard",
-            payex = payex,
-            vipps = vipps,
-            collector = collector,
         };
 
         var taxRate = "";
         if (!string.IsNullOrEmpty(order.TaxRates))
             taxRate = order.TaxRates.Split(":").FirstOrDefault();
 
-        var shippingOption = new DinteroOrderSessionRequest.ShippingOption
+        var shippingOption = new DinteroPreOrderSessionRequest.ShippingOption
         {
             id = Guid.NewGuid().ToString(),
             line_id = Guid.NewGuid().ToString(),
@@ -216,30 +204,19 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
             ? Convert.ToInt32(Math.Round((order.OrderShippingInclTax - order.OrderShippingExclTax) * 100)) : 0,
         };
 
-        var orderRequest = new DinteroOrderSessionRequest.Order
+        var orderRequest = new DinteroPreOrderSessionRequest.Order
         {
             merchant_reference = order.OrderGuid.ToString(),
             currency = order.CustomerCurrencyCode,
             shipping_option = shippingOption,
         };
-        var url = new DinteroOrderSessionRequest.Url
+        var url = new DinteroPreOrderSessionRequest.Url
         {
             return_url = string.Format(PluginDefaults.DINTERO_RETURN_URL, storeLocation, customer.CustomerGuid, orderRequest.merchant_reference),
-            callback_url = string.Format(PluginDefaults.DINTERO_CALLBACK_URL, "https://gant.nopadvance.team/", customer.CustomerGuid, orderRequest.merchant_reference)
+            callback_url = string.Format(PluginDefaults.DINTERO_CALLBACK_URL, storeLocation, customer.CustomerGuid, orderRequest.merchant_reference)
         };
 
-        var payexCreditcard = new DinteroOrderSessionRequest.PayexCreditcard
-        {
-            payment_token = "",
-            recurrence_token = ""
-        };
-
-        var tokens = new DinteroOrderSessionRequest.Tokens
-        {
-            PayexCreditcard = payexCreditcard
-        };
-
-        var dinteroOrderSessionRequest = new DinteroOrderSessionRequest
+        var dinteroOrderSessionRequest = new DinteroPreOrderSessionRequest
         {
             //configuration = configuration,
             order = orderRequest,
@@ -257,14 +234,14 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
 
         foreach (var item in orderItems)
         {
-            var discountLineForProduct = new List<DinteroOrderSessionRequest.Discountlines>();
+            var discountLineForProduct = new List<DinteroPreOrderSessionRequest.Discountlines>();
 
             var discountOrderItem = dinteroOrderItems.Where(x => x.ItemId == item.Id).Select(x => x).FirstOrDefault();
             for (int i = 0; i < discountOrderItem.discount_lines.Count; i++)
             {
                 var discountLineItem = discountOrderItem.discount_lines[i];
 
-                var discountLine = new DinteroOrderSessionRequest.Discountlines
+                var discountLine = new DinteroPreOrderSessionRequest.Discountlines
                 {
                     amount = discountLineItem.amount,
                     percentage = discountLineItem.percentage,
@@ -278,7 +255,7 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
                 discountLineCount++;
             }
 
-            dinteroOrderSessionRequest.order.items.Add(new DinteroOrderSessionRequest.Item()
+            dinteroOrderSessionRequest.order.items.Add(new DinteroPreOrderSessionRequest.Item()
             {
                 id = discountOrderItem.id,
                 line_id = lineCount.ToString(),
@@ -308,7 +285,7 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
                     if (!address.PhoneNumber.StartsWith("+47"))
                         phone = "+47" + address.PhoneNumber;
                 }
-                var dinteroBillingAddress = new DinteroOrderSessionRequest.OrderAddress
+                var dinteroBillingAddress = new DinteroPreOrderSessionRequest.OrderAddress
                 {
                     first_name = !string.IsNullOrEmpty(address.FirstName) ? address.FirstName.ToString() : "",
                     last_name = !string.IsNullOrEmpty(address.LastName) ? address.LastName.ToString() : "",
@@ -335,12 +312,11 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
         }
 
         // customer
-        var customerRequest = new DinteroOrderSessionRequest.Customer
+        var customerRequest = new DinteroPreOrderSessionRequest.Customer
         {
             customer_id = customer.Id.ToString(),
             email = !string.IsNullOrEmpty(customer.Email) ? customer.Email.ToString() : currentCustomerEmailAddress,
             phone_number = customer.Phone ?? "",
-            tokens = tokens
         };
         dinteroOrderSessionRequest.customer = customerRequest;
 
@@ -360,7 +336,7 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
                         if (!address.PhoneNumber.StartsWith("+47"))
                             phone = "+47" + address.PhoneNumber;
                     }
-                    var dinteroShippingAddress = new DinteroOrderSessionRequest.OrderAddress
+                    var dinteroShippingAddress = new DinteroPreOrderSessionRequest.OrderAddress
                     {
                         first_name = !string.IsNullOrEmpty(address.FirstName) ? address.FirstName.ToString() : "",
                         last_name = !string.IsNullOrEmpty(address.LastName) ? address.LastName.ToString() : "",
@@ -689,37 +665,6 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
         return $"{_webHelper.GetStoreLocation()}Admin/Dintero/Configure";
     }
 
-    public async Task ManageSiteMapAsync(SiteMapNode rootNode)
-    {
-        var DigitrollMenuItem = new SiteMapNode()
-        {
-            SystemName = "Digitroll.MainmenuItem",
-            Title = "Digitroll",
-            ControllerName = "",
-            ActionName = "",
-            Visible = true,
-            RouteValues = new RouteValueDictionary() { { "area", "admin" } },
-            IconClass = "icon-digitroll"
-        };
-        var menuItem = new SiteMapNode()
-        {
-            SystemName = "Payments.Dintero",
-            Title = "Dintero Checkout",
-            ControllerName = "Dintero",
-            ActionName = "Configure",
-            Visible = true,
-            RouteValues = new RouteValueDictionary() { { "area", "admin" } },
-            IconClass = "far fa-dot-circle"
-        };
-        var mainMenuNode = rootNode.ChildNodes.FirstOrDefault(x => x.SystemName == "Digitroll.MainmenuItem");
-        if (mainMenuNode == null)
-        {
-            rootNode.ChildNodes.Add(DigitrollMenuItem);
-            mainMenuNode = DigitrollMenuItem;
-        }
-        mainMenuNode.ChildNodes.Add(menuItem);
-    }
-
     /// <summary>
     /// Install plugin
     /// </summary>
@@ -804,7 +749,8 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
             ["Plugin.Payments.Dintero.YourOrder"] = "Your Order",
             ["Plugin.Payments.Dintero.EditCart"] = "Edit Cart",
             ["Plugin.Payments.Dintero.PaymentAdditionalFee"] = "Payment method additional fee",
-
+            ["Plugins.Payments.Dintero.Fields.DefaultPaymentType"] = "Default payment type",
+            ["Plugins.Payments.Dintero.Fields.DefaultPaymentType.Hint"] = "Set default payment type for dintero like 'payex.creditcard' , 'bambora.creditcard'",
         });
 
         await base.InstallAsync();
@@ -816,6 +762,16 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
     public override async Task UninstallAsync()
     {
         await base.UninstallAsync();
+    }
+
+    public Task<IList<string>> GetWidgetZonesAsync()
+    {
+        return Task.FromResult<IList<string>>(new List<string> { AdminWidgetZones.HeaderBefore });
+    }
+
+    public Type GetWidgetViewComponent(string widgetZone)
+    {
+        return typeof(DigitrollAdminCssViewComponent);
     }
 
     #endregion
@@ -861,6 +817,8 @@ public class DinteroPaymentProcessor : BasePlugin, IPaymentMethod, IAdminMenuPlu
     /// Gets a payment method description that will be displayed on checkout pages in the public store
     /// </summary>
     public string PaymentMethodDescription => _localizationService.GetResourceAsync("Plugins.Payments.Dintero.PaymentMethodDescription").Result;
+
+    public bool HideInWidgetList => false;
 
     #endregion
 

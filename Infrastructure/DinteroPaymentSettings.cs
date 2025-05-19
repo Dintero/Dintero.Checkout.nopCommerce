@@ -1,4 +1,4 @@
-using Nop.Core.Configuration;
+﻿using Nop.Core.Configuration;
 using Nop.Plugin.Payments.Dintero.Models;
 using System;
 
@@ -120,4 +120,9 @@ public class DinteroPaymentSettings : ISettings
     /// Gets or sets an sand box dintero auth audience
     /// </summary>
     public string ProductionAuthAudience { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Dintero default payment type
+    /// </summary>
+    public string DefaultPaymentType { get; set; }
 }

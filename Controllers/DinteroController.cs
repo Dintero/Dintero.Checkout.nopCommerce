@@ -53,11 +53,9 @@ public class DinteroController : BasePaymentController
 
     #region Methods
 
+    [CheckPermission(new[] { StandardPermission.Configuration.MANAGE_PAYMENT_METHODS })]
     public async Task<IActionResult> Configure()
     {
-        if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManagePaymentMethods))
-            return AccessDeniedView();
-
         //load settings for a chosen store scope
         var storeScope = await _storeContext.GetActiveStoreScopeConfigurationAsync();
         var dinteroPaymentSettings = await _settingService.LoadSettingAsync<DinteroPaymentSettings>(storeScope);
@@ -85,7 +83,8 @@ public class DinteroController : BasePaymentController
             SandboxDinteroCheckoutWebSDKEndpoint = dinteroPaymentSettings.SandboxDinteroCheckoutWebSDKEndpoint,
             SandboxAuthEndpoint = dinteroPaymentSettings.SandboxAuthEndpoint,
             SandboxAuthAudience = dinteroPaymentSettings.SandboxAuthAudience,
-            ProductionAuthAudience = dinteroPaymentSettings.ProductionAuthAudience
+            ProductionAuthAudience = dinteroPaymentSettings.ProductionAuthAudience,
+            DefaultPaymentType = dinteroPaymentSettings.DefaultPaymentType
         };
 
         if (storeScope > 0)
@@ -110,6 +109,7 @@ public class DinteroController : BasePaymentController
             model.SandboxAuthEndpoint_OverrideForStore = await _settingService.SettingExistsAsync(dinteroPaymentSettings, x => x.SandboxAuthEndpoint, storeScope);
             model.SandboxAuthAudience_OverrideForStore = await _settingService.SettingExistsAsync(dinteroPaymentSettings, x => x.SandboxAuthAudience, storeScope);
             model.ProductionAuthAudience_OverrideForStore = await _settingService.SettingExistsAsync(dinteroPaymentSettings, x => x.ProductionAuthAudience, storeScope);
+            model.DefaultPaymentType_OverrideForStore = await _settingService.SettingExistsAsync(dinteroPaymentSettings, x => x.DefaultPaymentType, storeScope);
         }
 
         return View("~/Plugins/Payments.Dintero/Views/Configure.cshtml", model);
@@ -117,11 +117,9 @@ public class DinteroController : BasePaymentController
 
     [HttpPost]
     [FormValueRequired("save")]
+    [CheckPermission(new[] { StandardPermission.Configuration.MANAGE_PAYMENT_METHODS })]
     public async Task<IActionResult> Configure(ConfigurationModel model)
     {
-        if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManagePaymentMethods))
-            return AccessDeniedView();
-
         if (!ModelState.IsValid)
             return await Configure();
 
@@ -156,6 +154,7 @@ public class DinteroController : BasePaymentController
         dinteroPaymentSettings.ProductionAuthEndpoint = model.ProductionAuthEndpoint;
         dinteroPaymentSettings.SandboxAuthAudience = model.SandboxAuthAudience;
         dinteroPaymentSettings.ProductionAuthAudience = model.ProductionAuthAudience;
+        dinteroPaymentSettings.DefaultPaymentType = model.DefaultPaymentType;
 
         /* We do not clear cache after each setting update.
          * This behavior can increase performance because cached settings will not be cleared 
@@ -182,6 +181,7 @@ public class DinteroController : BasePaymentController
         await _settingService.SaveSettingOverridablePerStoreAsync(dinteroPaymentSettings, x => x.SandboxAuthEndpoint, model.SandboxAuthEndpoint_OverrideForStore, storeScope, false);
         await _settingService.SaveSettingOverridablePerStoreAsync(dinteroPaymentSettings, x => x.SandboxAuthAudience, model.SandboxAuthAudience_OverrideForStore, storeScope, false);
         await _settingService.SaveSettingOverridablePerStoreAsync(dinteroPaymentSettings, x => x.ProductionAuthAudience, model.ProductionAuthAudience_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(dinteroPaymentSettings, x => x.DefaultPaymentType, model.DefaultPaymentType_OverrideForStore, storeScope, false);
 
         //now clear settings cache
         await _settingService.ClearCacheAsync();
@@ -196,11 +196,9 @@ public class DinteroController : BasePaymentController
 
     [HttpPost, ActionName("Configure")]
     [FormValueRequired("generate-token")]
+    [CheckPermission(new[] { StandardPermission.Configuration.MANAGE_PAYMENT_METHODS })]
     public virtual async Task<IActionResult> GenerateClubToken()
     {
-        if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManagePaymentMethods))
-            return AccessDeniedView();
-
         var token = await _dinteroHttpClient.GenerateTokenAsync("auth/token");
         if (!string.IsNullOrEmpty(token))
             _notificationService.SuccessNotification(await _localizationService.GetResourceAsync("Plugin.Payments.Dintero.Token.Generated.Successfully"));

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Nop.Core;
+using Nop.Core.Caching;
 using Nop.Core.Domain.Customers;
 using Nop.Core.Domain.Directory;
 using Nop.Core.Domain.Discounts;
@@ -82,6 +83,7 @@ namespace Nop.Plugin.Payments.Dintero.Services
         IShippingService shippingService,
         IShoppingCartService shoppingCartService,
         IStateProvinceService stateProvinceService,
+        IStaticCacheManager staticCacheManager,
         IStoreMappingService storeMappingService,
         IStoreService storeService,
         ITaxService taxService,
@@ -95,53 +97,53 @@ namespace Nop.Plugin.Payments.Dintero.Services
         RewardPointsSettings rewardPointsSettings,
         ShippingSettings shippingSettings,
         TaxSettings taxSettings,
-        IStoreContext storeContext) : base(
-                currencySettings,
-                addressService,
-                affiliateService,
-                checkoutAttributeFormatter,
-                countryService,
-                currencyService,
-                customerActivityService,
-                customerService,
-                customNumberFormatter,
-                discountService,
-                encryptionService,
-                eventPublisher,
-                genericAttributeService,
-                giftCardService,
-                languageService,
-                localizationService,
-                logger,
-                orderService,
-                orderTotalCalculationService,
-                paymentPluginManager,
-                paymentService,
-                pdfService,
-                priceCalculationService,
-                priceFormatter,
-                productAttributeFormatter,
-                productAttributeParser,
-                productService,
-                returnRequestService,
-                rewardPointService,
-                shipmentService,
-                shippingService,
-                shoppingCartService,
-                stateProvinceService,
-                storeMappingService,
-                storeService,
-                taxService,
-                vendorService,
-                webHelper,
-                workContext,
-                workflowMessageService,
-                localizationSettings,
-                orderSettings,
-                paymentSettings,
-                rewardPointsSettings,
-                shippingSettings,
-                taxSettings)
+        IStoreContext storeContext) : base(currencySettings,
+        addressService,
+        affiliateService,
+        checkoutAttributeFormatter,
+        countryService,
+        currencyService,
+        customerActivityService,
+        customerService,
+        customNumberFormatter,
+        discountService,
+        encryptionService,
+        eventPublisher,
+        genericAttributeService,
+        giftCardService,
+        languageService,
+        localizationService,
+        logger,
+        orderService,
+        orderTotalCalculationService,
+        paymentPluginManager,
+        paymentService,
+        pdfService,
+        priceCalculationService,
+        priceFormatter,
+        productAttributeFormatter,
+        productAttributeParser,
+        productService,
+        returnRequestService,
+        rewardPointService,
+        shipmentService,
+        shippingService,
+        shoppingCartService,
+        stateProvinceService,
+        staticCacheManager,
+        storeMappingService,
+        storeService,
+        taxService,
+        vendorService,
+        webHelper,
+        workContext,
+        workflowMessageService,
+        localizationSettings,
+        orderSettings,
+        paymentSettings,
+        rewardPointsSettings,
+        shippingSettings,
+        taxSettings)
         {
             _storeContext = storeContext;
             _storeContext = storeContext;
@@ -161,89 +163,120 @@ namespace Nop.Plugin.Payments.Dintero.Services
         /// </returns>
         public virtual async Task<PlaceOrderResult> PlaceOrderAsync(ProcessPaymentRequest processPaymentRequest)
         {
-            if (processPaymentRequest == null)
-                throw new ArgumentNullException(nameof(processPaymentRequest));
+            ArgumentNullException.ThrowIfNull(processPaymentRequest);
 
-            var result = new PlaceOrderResult();
-            //CUSTOM CODE Task #17687
-            var customer = await _customerService.GetCustomerByIdAsync(processPaymentRequest.CustomerId);
-            //CUSTOM CODE Task #17687
+            if (processPaymentRequest.OrderGuid == Guid.Empty)
+                throw new Exception("Order GUID is not generated");
+
+            //prepare order details
+            var details = await PreparePlaceOrderDetailsAsync(processPaymentRequest);
+
+            async Task<PlaceOrderResult> placeOrder(PlaceOrderContainer placeOrderContainer)
+            {
+                var result = new PlaceOrderResult();
+
+                try
+                {
+                    var processPaymentResult =
+                        await GetProcessPaymentResultAsync(processPaymentRequest, placeOrderContainer)
+                        ?? throw new NopException("processPaymentResult is not available");
+
+                    if (processPaymentResult.Success)
+                    {
+                        var order = await SaveOrderDetailsAsync(processPaymentRequest, processPaymentResult,
+                            placeOrderContainer);
+                        result.PlacedOrder = order;
+
+                        //move shopping cart items to order items
+                        await MoveShoppingCartItemsToOrderItemsAsync(placeOrderContainer, order);
+
+                        //discount usage history
+                        await SaveDiscountUsageHistoryAsync(placeOrderContainer, order);
+
+                        //gift card usage history
+                        await SaveGiftCardUsageHistoryAsync(placeOrderContainer, order);
+
+                        //recurring orders
+                        if (placeOrderContainer.IsRecurringShoppingCart)
+                            await CreateFirstRecurringPaymentAsync(processPaymentRequest, order);
+
+                        //reset checkout data
+                        await _customerService.ResetCheckoutDataAsync(placeOrderContainer.Customer,
+                            processPaymentRequest.StoreId, clearCouponCodes: true, clearCheckoutAttributes: false, clearShippingMethod: false, clearPaymentMethod: false);
+                        await _customerActivityService.InsertActivityAsync("PublicStore.PlaceOrder",
+                            string.Format(await _localizationService.GetResourceAsync("ActivityLog.PublicStore.PlaceOrder"),
+                                order.Id), order);
+
+                        //raise event       
+                        await _eventPublisher.PublishAsync(new OrderPlacedEvent(order));
+
+                        //check order status
+                        await CheckOrderStatusAsync(order);
+
+                        if (order.PaymentStatus == PaymentStatus.Paid)
+                            await ProcessOrderPaidAsync(order);
+                    }
+                    else
+                        foreach (var paymentError in processPaymentResult.Errors)
+                            result.AddError(string.Format(
+                                await _localizationService.GetResourceAsync("Checkout.PaymentError"), paymentError));
+                }
+                catch (Exception exc)
+                {
+                    await _logger.ErrorAsync(exc.Message, exc);
+                    result.AddError(exc.Message);
+                }
+
+                if (result.Success)
+                    return result;
+
+                //log errors
+                var logError = result.Errors.Aggregate("Error while placing order. ",
+                    (current, next) => $"{current}Error {result.Errors.IndexOf(next) + 1}: {next}. ");
+                var customer = await _customerService.GetCustomerByIdAsync(processPaymentRequest.CustomerId);
+                await _logger.ErrorAsync(logError, customer: customer);
+
+                return result;
+            }
+
+            if (!_orderSettings.PlaceOrderWithLock)
+                return await placeOrder(details);
+
+            PlaceOrderResult result;
+            var resource = details.Customer.Id.ToString();
+
+            //the named mutex helps to avoid creating the same order in different threads,
+            //and does not decrease performance significantly, because the code is blocked only for the specific cart.
+            //you should be very careful, mutexes cannot be used in with the await operation
+            //we can't use semaphore here, because it produces PlatformNotSupportedException exception on UNIX based systems
+            using var mutex = new Mutex(false, resource);
+
+            mutex.WaitOne();
+
             try
             {
-                if (processPaymentRequest.OrderGuid == Guid.Empty)
-                    throw new Exception("Order GUID is not generated");
+                var cacheKey = _staticCacheManager.PrepareKey(NopOrderDefaults.OrderWithLockCacheKey, resource);
+                cacheKey.CacheTime = _orderSettings.MinimumOrderPlacementInterval;
 
-                //prepare order details
-                var details = await PreparePlaceOrderDetailsAsync(processPaymentRequest);
+                var exist = _staticCacheManager.Get(cacheKey, () => false);
 
-                var processPaymentResult = await GetProcessPaymentResultAsync(processPaymentRequest, details);
-
-                if (processPaymentResult == null)
-                    throw new NopException("processPaymentResult is not available");
-
-                if (processPaymentResult.Success)
+                if (exist)
                 {
-                    var order = await SaveOrderDetailsAsync(processPaymentRequest, processPaymentResult, details);
-                    result.PlacedOrder = order;
-
-                    //move shopping cart items to order items
-                    await MoveShoppingCartItemsToOrderItemsAsync(details, order);
-
-                    //discount usage history
-                    await SaveDiscountUsageHistoryAsync(details, order);
-
-                    //gift card usage history
-                    await SaveGiftCardUsageHistoryAsync(details, order);
-
-                    //recurring orders
-                    if (details.IsRecurringShoppingCart)
-                        await CreateFirstRecurringPaymentAsync(processPaymentRequest, order);
-
-                    ////CUSTOM CODE Task #17687
-                    ////notifications
-                    //var paymentMethodofOrder = await _paymentPluginManager
-                    //    .LoadPluginBySystemNameAsync(order.PaymentMethodSystemName, customer, order.StoreId);
-
-                    //if (!(paymentMethodofOrder != null
-                    //    && (paymentMethodofOrder.PaymentMethodType == PaymentMethodType.Redirection
-                    //|| paymentMethodofOrder.PaymentMethodType == PaymentMethodType.Button)
-                    //    && _orderSettings.RedirectPaymentUseDeletedOrderFlow
-                    //    && _orderSettings.RedirectPaymentMethods.Contains(paymentMethodofOrder.PluginDescriptor.SystemName)))
-                    //    await SendNotificationsAndSaveNotesAsync(order);
-                    ////CUSTOM CODE Task #17687
-
-                    //reset checkout data
-                    await _customerService.ResetCheckoutDataAsync(details.Customer, processPaymentRequest.StoreId, clearCouponCodes: true, clearCheckoutAttributes: false, clearShippingMethod: false, clearPaymentMethod: false);
-                    await _customerActivityService.InsertActivityAsync("PublicStore.PlaceOrder",
-                        string.Format(await _localizationService.GetResourceAsync("ActivityLog.PublicStore.PlaceOrder"), order.Id), order);
-
-                    //check order status
-                    await CheckOrderStatusAsync(order);
-
-                    //raise event       
-                    await _eventPublisher.PublishAsync(new OrderPlacedEvent(order));
-
-                    if (order.PaymentStatus == PaymentStatus.Paid)
-                        await ProcessOrderPaidAsync(order);
+                    result = new PlaceOrderResult();
+                    result.Errors.Add(_localizationService.GetResourceAsync("Checkout.MinOrderPlacementInterval").Result);
                 }
                 else
-                    foreach (var paymentError in processPaymentResult.Errors)
-                        result.AddError(string.Format(await _localizationService.GetResourceAsync("Checkout.PaymentError"), paymentError));
+                {
+                    result = placeOrder(details).Result;
+
+                    if (result.Success)
+                        _staticCacheManager.SetAsync(cacheKey, true).Wait();
+                }
             }
-            catch (Exception exc)
+            finally
             {
-                await _logger.ErrorAsync(exc.Message, exc);
-                result.AddError(exc.Message);
+                mutex.ReleaseMutex();
             }
-
-            if (result.Success)
-                return result;
-
-            //log errors
-            var logError = result.Errors.Aggregate("Error while placing order. ",
-                (current, next) => $"{current}Error {result.Errors.IndexOf(next) + 1}: {next}. ");
-            //var customer = await _customerService.GetCustomerByIdAsync(processPaymentRequest.CustomerId);
-            await _logger.ErrorAsync(logError, customer: customer);
 
             return result;
         }
@@ -315,8 +348,6 @@ namespace Nop.Plugin.Payments.Dintero.Services
 
                 await _orderService.InsertOrderItemAsync(orderItem);
 
-                var isIncludingTax = await _workContext.GetTaxDisplayTypeAsync() == TaxDisplayType.IncludingTax && !_taxSettings.ForceTaxExclusionFromOrderSubtotal;
-
                 var discountLineForProduct = new List<OrderItemDiscountlines>();
                 if (scDiscounts.Any())
                 {
@@ -326,7 +357,7 @@ namespace Nop.Plugin.Payments.Dintero.Services
                     var discountLine = new OrderItemDiscountlines
                     {
                         ItemId = orderItem.Id,
-                        amount = !isIncludingTax ? discountAmountExclTax.price * 100 : discountAmountInclTax.price * 100,
+                        amount = !_taxSettings.PricesIncludeTax ? discountAmountExclTax.price * 100 : discountAmountInclTax.price * 100,
                         percentage = decimal.Zero,
                         description = discountDescription,
                         discount_type = "customer",
@@ -347,7 +378,7 @@ namespace Nop.Plugin.Payments.Dintero.Services
                     line_id = lineNumber.ToString(),
                     description = product.Name,
                     quantity = orderItem.Quantity,
-                    amount = scSubTotal * 100,
+                    amount = _taxSettings.PricesIncludeTax ? scSubTotalInclTax.price * 100 : scSubTotalExclTax.price * 100,
                     vat_amount = vatAmount * 100,
                     vat = scSubTotalInclTax.taxRate,
                     discount_lines = discountLineForProduct
@@ -358,28 +389,11 @@ namespace Nop.Plugin.Payments.Dintero.Services
                 //gift cards
                 await AddGiftCardsAsync(product, sc.AttributesXml, sc.Quantity, orderItem, scUnitPriceExclTax.price);
 
-                ////inventory
-                //if (!(paymentMethodofOrder != null
-                //    && (paymentMethodofOrder.PaymentMethodType == PaymentMethodType.Redirection
-                //    || paymentMethodofOrder.PaymentMethodType == PaymentMethodType.Button)
-                //    && orderSettings.RedirectPaymentUseDeletedOrderFlow
-                //    && orderSettings.RedirectPaymentMethods.Contains(paymentMethodofOrder.PluginDescriptor.SystemName)) && order.PaymentMethodSystemName.ToLowerInvariant() != "payments.dintero")
-                //{
-                //    await _productService.AdjustInventoryAsync(product, -sc.Quantity, sc.AttributesXml,
-                //    string.Format(await _localizationService.GetResourceAsync("Admin.StockQuantityHistory.Messages.PlaceOrder"), order.Id));
-                //}
             }
 
             var dinteroOrderItemsJson = JsonConvert.SerializeObject(dinteroOrderItems);
             await _genericAttributeService.SaveAttributeAsync<string>(order, "OrderItemsWithDiscountLine", dinteroOrderItemsJson);
 
-            ////clear shopping cart
-            //if (!(paymentMethodofOrder != null
-            //    && (paymentMethodofOrder.PaymentMethodType == PaymentMethodType.Redirection
-            //        || paymentMethodofOrder.PaymentMethodType == PaymentMethodType.Button)
-            //    && orderSettings.RedirectPaymentUseDeletedOrderFlow
-            //    && orderSettings.RedirectPaymentMethods.Contains(paymentMethodofOrder.PluginDescriptor.SystemName)) && order.PaymentMethodSystemName.ToLowerInvariant() != "payments.dintero")
-            //    details.Cart.ToList().ForEach(async sci => await _shoppingCartService.DeleteShoppingCartItemAsync(sci, false));
         }
 
         #endregion

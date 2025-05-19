@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Nop.Plugin.Payments.Dintero.Domain;
 
+[JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
 public class DinteroOrderItem
 {
     public DinteroOrderItem()
@@ -19,6 +21,7 @@ public class DinteroOrderItem
     public IList<OrderItemDiscountlines> discount_lines { get; set; }
 }
 
+[JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
 public class OrderItemDiscountlines
 {
     public int ItemId { get; set; }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace Nop.Plugin.Payments.Dintero.Domain;
 
+[JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
 public class DinteroPreOrderSessionRequest
 {
     public DinteroPreOrderSessionRequest()
@@ -22,13 +23,20 @@ public class DinteroPreOrderSessionRequest
     public Express express { get; set; }
     public Customer customer { get; set; }
     public string profile_id { get; set; }
+
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     public string id { get; set; }
+
+    [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
     public string? transaction_id { get; set; }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Creditcard
     {
         public bool enabled { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Payex
     {
         public Payex()
@@ -38,17 +46,20 @@ public class DinteroPreOrderSessionRequest
         public Creditcard creditcard { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Vipps
     {
         public bool enabled { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Invoice
     {
         public bool enabled { get; set; }
         public string type { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Collector
     {
         public Collector()
@@ -59,21 +70,40 @@ public class DinteroPreOrderSessionRequest
         public Invoice invoice { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public class Wallets
+    {
+        public string type { get; set; }
+        public bool enabled { get; set; }
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public class Zero
+    {
+        public string type { get; set; }
+        public bool enabled { get; set; }
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
+    public class Dintero
+    {
+        public string type { get; set; }
+        public Wallets wallets { get; set; }
+        public Zero zero { get; set; }
+    }
+
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Configuration
     {
         public Configuration()
         {
-            payex = new Payex();
-            vipps = new Vipps();
-            collector = new Collector();
+            dintero = new Dintero();
         }
-        public string default_payment_type { get; set; }
         public bool auto_capture { get; set; }
-        public Payex payex { get; set; }
-        public Vipps vipps { get; set; }
-        public Collector collector { get; set; }
+        public Dintero dintero { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Item
     {
         public Item()
@@ -91,6 +121,7 @@ public class DinteroPreOrderSessionRequest
         public IList<Discountlines> discount_lines { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Order
     {
         public Order()
@@ -114,6 +145,7 @@ public class DinteroPreOrderSessionRequest
         public IList<string> discount_codes { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Discountlines
     {
         public decimal amount { get; set; }
@@ -124,6 +156,7 @@ public class DinteroPreOrderSessionRequest
         public int line_id { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Url
     {
         public string return_url { get; set; }
@@ -132,6 +165,7 @@ public class DinteroPreOrderSessionRequest
 
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Express
     {
         public Express()
@@ -143,6 +177,7 @@ public class DinteroPreOrderSessionRequest
         public List<string> customer_types { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class ShippingOption
     {
         public ShippingOption()
@@ -162,6 +197,7 @@ public class DinteroPreOrderSessionRequest
         public ShippingOptionPickupAddress pick_up_address { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class ShippingOptionPickupAddress
     {
         public ShippingOptionPickupAddress()
@@ -179,6 +215,7 @@ public class DinteroPreOrderSessionRequest
         public string last_name { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class OrderAddress
     {
         public string first_name { get; set; }
@@ -200,23 +237,7 @@ public class DinteroPreOrderSessionRequest
         public string cost_center { get; set; }
     }
 
-    public class PayexCreditcard
-    {
-        public string payment_token { get; set; }
-        public string recurrence_token { get; set; }
-    }
-
-    public class Tokens
-    {
-        public Tokens()
-        {
-            PayexCreditcard = new PayexCreditcard();
-        }
-
-        [JsonProperty("payex.creditcard")]
-        public PayexCreditcard PayexCreditcard { get; set; }
-    }
-
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class PickUpAddress
     {
         public PickUpAddress()
@@ -229,6 +250,7 @@ public class DinteroPreOrderSessionRequest
         public IList<DropPoint> DropPoints { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class PickupPoint
     {
         public int id { get; set; }
@@ -242,18 +264,15 @@ public class DinteroPreOrderSessionRequest
         public decimal longitude { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class Customer
     {
-        public Customer()
-        {
-            tokens = new Tokens();
-        }
         public string customer_id { get; set; }
         public string email { get; set; }
         public string phone_number { get; set; }
-        public Tokens tokens { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class DropPoint
     {
         public int OriginalID { get; set; }
